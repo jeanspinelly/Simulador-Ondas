@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onda Harmônica Espacial y(x,t)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- MathJax for rendering equations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;600&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #090d16;
+            color: #f3f4f6;
+        }
+
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Custom slider styles */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            background: #1e293b;
+            border-radius: 4px;
+            border: 1px solid #334155;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #06b6d4;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -5px;
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
+            transition: transform 0.1s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #22d3ee;
+        }
+
+        .glow-cyan {
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100 overflow-x-hidden">
+
+    <!-- Header Section -->
+    <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 px-4 py-3 sticky top-0 z-50 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="p-2 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400">
+                <i class="fa-solid fa-wave-square text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight tracking-wide text-white">
+                    Onda Harmônica: <span class="text-cyan-400 font-mono">y(x,t) = y<sub>m</sub> sin(k x - ω t)</span>
+                </h1>
+                <p class="text-xs text-slate-400">Visualizador Dinâmico Espacial</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <button id="resetBtn" title="Resetar Simulação" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-left"></i> Reiniciar
+            </button>
+            <button id="fullscreenBtn" title="Modo Apresentação" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white transition flex items-center gap-1.5 glow-cyan">
+                <i class="fa-solid fa-expand"></i> Tela Cheia
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 max-w-[1920px] mx-auto w-full">
+
+        <!-- Main Spatial Canvas Area (8 Cols) -->
+        <section class="lg:col-span-8 flex flex-col gap-4">
+            
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-2xl relative flex flex-col flex-1 justify-between">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-semibold text-cyan-400 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-xs"></i>
+                        Perfil Espacial da Onda em <span class="font-mono text-slate-200">t = <span id="timeDisplay">0.00</span>s</span>
+                    </h2>
+                    <span class="text-xs px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 text-slate-400 font-mono">
+                        Propagação: &rarr; +x
+                    </span>
+                </div>
+
+                <!-- Canvas Container -->
+                <div class="relative w-full h-[380px] md:h-[460px] bg-slate-950 rounded-lg border border-slate-800/80 overflow-hidden flex items-center">
+                    <canvas id="spatialCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+
+                    <!-- Overlay particle badge -->
+                    <div id="particleBadge" class="absolute bottom-3 left-3 bg-slate-900/90 border border-slate-700/80 backdrop-blur px-3 py-1.5 rounded-lg text-xs text-slate-300 flex items-center gap-2 shadow-lg">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block animate-pulse"></span>
+                        Partícula em $x_0 = \text{<span id="trackerXPos">2.0</span> m}$
+                    </div>
+                </div>
+
+                <!-- Control Playback Bar -->
+                <div class="mt-4 pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center space-x-2">
+                        <button id="playPauseBtn" class="w-10 h-10 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold flex items-center justify-center transition shadow-md glow-cyan">
+                            <i class="fa-solid fa-pause text-base" id="playIcon"></i>
+                        </button>
+                        <button id="stepBackBtn" class="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center transition" title="-0.05s">
+                            <i class="fa-solid fa-backward-step"></i>
+                        </button>
+                        <button id="stepForwardBtn" class="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center transition" title="+0.05s">
+                            <i class="fa-solid fa-forward-step"></i>
+                        </button>
+                    </div>
+
+                    <!-- Speed Toggle -->
+                    <div class="flex items-center space-x-2 bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-lg">
+                        <span class="text-xs text-slate-400 font-medium">Velocidade:</span>
+                        <button id="speed05" class="speed-btn px-2 py-0.5 text-xs rounded font-mono text-slate-400 hover:text-white">0.5x</button>
+                        <button id="speed10" class="speed-btn px-2 py-0.5 text-xs rounded font-mono text-cyan-400 bg-cyan-500/10 font-semibold border border-cyan-500/30">1.0x</button>
+                        <button id="speed20" class="speed-btn px-2 py-0.5 text-xs rounded font-mono text-slate-400 hover:text-white">2.0x</button>
+                    </div>
+
+                    <!-- Visual Toggles -->
+                    <div class="flex items-center space-x-2">
+                        <button id="toggleWavelength" class="px-3 py-1.5 rounded-lg text-xs font-medium border transition flex items-center gap-1.5 bg-emerald-500/20 border-emerald-500/50 text-emerald-300">
+                            <i class="fa-solid fa-ruler-horizontal"></i> λ (Comprimento)
+                        </button>
+                        <button id="toggleAmplitude" class="px-3 py-1.5 rounded-lg text-xs font-medium border transition flex items-center gap-1.5 bg-purple-500/20 border-purple-500/50 text-purple-300">
+                            <i class="fa-solid fa-arrows-up-down"></i> y<sub>m</sub> (Amplitude)
+                        </button>
+                        <button id="toggleParticle" class="px-3 py-1.5 rounded-lg text-xs font-medium border transition flex items-center gap-1.5 bg-amber-500/20 border-amber-500/50 text-amber-300">
+                            <i class="fa-solid fa-circle"></i> Oscilador
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Side Panel: Sliders & Calculated Metrics (4 Cols) -->
+        <section class="lg:col-span-4 flex flex-col gap-4">
+
+            <!-- Direct Control Sliders -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col gap-5">
+                <h2 class="text-base font-bold text-slate-100 border-b border-slate-800 pb-2.5 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-cyan-400"></i> Ajuste Parâmetros Diretos
+                </h2>
+
+                <!-- Slider 1: Wave Number k -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between items-center">
+                        <label for="kInput" class="text-sm font-medium text-slate-200 flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                            Número de Onda ($k$):
+                        </label>
+                        <span class="font-mono text-sm font-semibold text-emerald-400 bg-slate-950 px-2.5 py-0.5 rounded border border-slate-800" id="kVal">1.57 rad/m</span>
+                    </div>
+                    <input type="range" id="kInput" min="0.5" max="4.0" step="0.05" value="1.57">
+                    <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+                        <span>0.5 rad/m</span>
+                        <span>4.0 rad/m</span>
+                    </div>
+                </div>
+
+                <!-- Slider 2: Angular Frequency omega -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between items-center">
+                        <label for="omegaInput" class="text-sm font-medium text-slate-200 flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+                            Frequência Angular ($\omega$):
+                        </label>
+                        <span class="font-mono text-sm font-semibold text-cyan-400 bg-slate-950 px-2.5 py-0.5 rounded border border-slate-800" id="omegaVal">3.14 rad/s</span>
+                    </div>
+                    <input type="range" id="omegaInput" min="0.5" max="10.0" step="0.1" value="3.14">
+                    <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+                        <span>0.5 rad/s</span>
+                        <span>10.0 rad/s</span>
+                    </div>
+                </div>
+
+                <!-- Slider 3: Amplitude y_m -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between items-center">
+                        <label for="ymInput" class="text-sm font-medium text-slate-200 flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span>
+                            Amplitude ($y_m$):
+                        </label>
+                        <span class="font-mono text-sm font-semibold text-purple-400 bg-slate-950 px-2.5 py-0.5 rounded border border-slate-800" id="ymVal">1.2 m</span>
+                    </div>
+                    <input type="range" id="ymInput" min="0.2" max="2.0" step="0.1" value="1.2">
+                    <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+                        <span>0.2 m</span>
+                        <span>2.0 m</span>
+                    </div>
+                </div>
+
+                <!-- Slider 4: Position Tracker x0 -->
+                <div class="space-y-1.5 pt-2 border-t border-slate-800">
+                    <div class="flex justify-between items-center">
+                        <label for="particleXInput" class="text-sm font-medium text-slate-200 flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                            Posição do Oscilador ($x_0$):
+                        </label>
+                        <span class="font-mono text-sm font-semibold text-amber-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800" id="particleXVal">2.0 m</span>
+                    </div>
+                    <input type="range" id="particleXInput" min="0.0" max="10.0" step="0.1" value="2.0">
+                </div>
+            </div>
+
+            <!-- Calculated Physics Values Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col gap-3">
+                <h2 class="text-base font-bold text-slate-100 border-b border-slate-800 pb-2 flex items-center justify-between">
+                    <span class="flex items-center gap-2">
+                        <i class="fa-solid fa-calculator text-amber-400"></i> Grandezas Derivadas
+                    </span>
+                    <span class="text-[11px] font-normal text-slate-400 font-mono">Cálculo Direto</span>
+                </h2>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- Wavelength lambda = 2pi / k -->
+                    <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+                        <div class="text-[11px] text-slate-400 mb-0.5">Comprimento ($\lambda = 2\pi/k$)</div>
+                        <div class="text-lg font-bold font-mono text-emerald-400" id="calcLambda">4.00 m</div>
+                    </div>
+
+                    <!-- Frequency f = omega / 2pi -->
+                    <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+                        <div class="text-[11px] text-slate-400 mb-0.5">Frequência ($f = \omega/2\pi$)</div>
+                        <div class="text-lg font-bold font-mono text-cyan-400" id="calcFreq">0.50 Hz</div>
+                    </div>
+
+                    <!-- Period T = 1 / f -->
+                    <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+                        <div class="text-[11px] text-slate-400 mb-0.5">Período ($T = 1/f$)</div>
+                        <div class="text-lg font-bold font-mono text-amber-400" id="calcPeriod">2.00 s</div>
+                    </div>
+
+                    <!-- Phase Velocity v = omega / k -->
+                    <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+                        <div class="text-[11px] text-slate-400 mb-0.5">Velocidade ($v = \omega/k$)</div>
+                        <div class="text-lg font-bold font-mono text-purple-400" id="calcV">2.00 m/s</div>
+                    </div>
+                </div>
+
+                <!-- Formula Highlight Box -->
+                <div class="bg-slate-950/90 border border-cyan-500/30 p-3 rounded-lg text-center font-mono text-sm text-cyan-300 shadow-inner mt-1">
+                    $$y(x,t) = y_m \sin(k x - \omega t)$$
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Engine Logic -->
+    <script>
+        // State variables
+        const state = {
+            k: 1.57,          // Wave number (rad/m)
+            omega: 3.14,      // Angular frequency (rad/s)
+            ym: 1.2,          // Amplitude (m)
+            particleX: 2.0,   // Position x0 of particle tracker
+            time: 0.0,        // Current simulation time (s)
+            isPlaying: true,  // Playback state
+            speedMultiplier: 1.0,
+            showLambda: true,
+            showAmplitude: true,
+            showParticle: true,
+            maxSpatialX: 10.0 // Spatial X limit (m)
+        };
+
+        // Canvas Setup
+        const spatialCanvas = document.getElementById('spatialCanvas');
+        const spatialCtx = spatialCanvas.getContext('2d');
+
+        // Control Elements
+        const kInput = document.getElementById('kInput');
+        const omegaInput = document.getElementById('omegaInput');
+        const ymInput = document.getElementById('ymInput');
+        const particleXInput = document.getElementById('particleXInput');
+
+        const kVal = document.getElementById('kVal');
+        const omegaVal = document.getElementById('omegaVal');
+        const ymVal = document.getElementById('ymVal');
+        const particleXVal = document.getElementById('particleXVal');
+        const trackerXPos = document.getElementById('trackerXPos');
+        const timeDisplay = document.getElementById('timeDisplay');
+
+        const calcLambda = document.getElementById('calcLambda');
+        const calcFreq = document.getElementById('calcFreq');
+        const calcPeriod = document.getElementById('calcPeriod');
+        const calcV = document.getElementById('calcV');
+
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const playIcon = document.getElementById('playIcon');
+        const stepBackBtn = document.getElementById('stepBackBtn');
+        const stepForwardBtn = document.getElementById('stepForwardBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+        const toggleWavelength = document.getElementById('toggleWavelength');
+        const toggleAmplitude = document.getElementById('toggleAmplitude');
+        const toggleParticle = document.getElementById('toggleParticle');
+        const particleBadge = document.getElementById('particleBadge');
+
+        // Physics Helpers
+        function getLambda() { return (2 * Math.PI) / state.k; }
+        function getFrequency() { return state.omega / (2 * Math.PI); }
+        function getPeriod() { return (2 * Math.PI) / state.omega; }
+        function getWaveSpeed() { return state.omega / state.k; }
+        function calculateY(x, t) { return state.ym * Math.sin(state.k * x - state.omega * t); }
+
+        // Resize Canvas
+        function resizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = spatialCanvas.parentElement.getBoundingClientRect();
+            spatialCanvas.width = rect.width * dpr;
+            spatialCanvas.height = rect.height * dpr;
+            spatialCtx.scale(dpr, dpr);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Update Math Displays
+        function updateCalculatedMetrics() {
+            const lambda = getLambda();
+            const f = getFrequency();
+            const T = getPeriod();
+            const v = getWaveSpeed();
+
+            calcLambda.textContent = `${lambda.toFixed(2)} m`;
+            calcFreq.textContent = `${f.toFixed(2)} Hz`;
+            calcPeriod.textContent = `${T.toFixed(2)} s`;
+            calcV.textContent = `${v.toFixed(2)} m/s`;
+
+            timeDisplay.textContent = state.time.toFixed(2);
+        }
+
+        // Draw Main Spatial Graph
+        function drawSpatialGraph() {
+            const w = spatialCanvas.parentElement.clientWidth;
+            const h = spatialCanvas.parentElement.clientHeight;
+
+            spatialCtx.clearRect(0, 0, w, h);
+
+            const paddingLeft = 45;
+            const paddingBottom = 35;
+            const paddingTop = 25;
+            const paddingRight = 25;
+
+            const graphW = w - paddingLeft - paddingRight;
+            const graphH = h - paddingTop - paddingBottom;
+            const centerY = paddingTop + graphH / 2;
+
+            const maxY = 2.5;
+            const scaleX = x => paddingLeft + (x / state.maxSpatialX) * graphW;
+            const scaleY = y => centerY - (y / maxY) * (graphH / 2);
+
+            // Grid Lines
+            spatialCtx.strokeStyle = '#1e293b';
+            spatialCtx.lineWidth = 1;
+
+            // Horizontal Grid (y values)
+            for (let yVal = -2; yVal <= 2; yVal += 1) {
+                const yPos = scaleY(yVal);
+                spatialCtx.beginPath();
+                spatialCtx.moveTo(paddingLeft, yPos);
+                spatialCtx.lineTo(w - paddingRight, yPos);
+                spatialCtx.stroke();
+
+                spatialCtx.fillStyle = '#64748b';
+                spatialCtx.font = '10px Fira Code, monospace';
+                spatialCtx.textAlign = 'right';
+                spatialCtx.fillText(`${yVal > 0 ? '+' : ''}${yVal}m`, paddingLeft - 8, yPos + 3);
+            }
+
+            // Vertical Grid (x values)
+            for (let xVal = 0; xVal <= state.maxSpatialX; xVal += 2) {
+                const xPos = scaleX(xVal);
+                spatialCtx.beginPath();
+                spatialCtx.moveTo(xPos, paddingTop);
+                spatialCtx.lineTo(xPos, h - paddingBottom);
+                spatialCtx.stroke();
+
+                spatialCtx.fillStyle = '#64748b';
+                spatialCtx.font = '10px Fira Code, monospace';
+                spatialCtx.textAlign = 'center';
+                spatialCtx.fillText(`${xVal}m`, xPos, h - paddingBottom + 16);
+            }
+
+            // X Axis Center Line
+            spatialCtx.strokeStyle = '#475569';
+            spatialCtx.lineWidth = 1.5;
+            spatialCtx.beginPath();
+            spatialCtx.moveTo(paddingLeft, centerY);
+            spatialCtx.lineTo(w - paddingRight, centerY);
+            spatialCtx.stroke();
+
+            // Waveform Path y(x,t)
+            spatialCtx.strokeStyle = '#06b6d4'; // Cyan
+            spatialCtx.lineWidth = 3.5;
+            spatialCtx.shadowColor = '#06b6d4';
+            spatialCtx.shadowBlur = 10;
+
+            spatialCtx.beginPath();
+            const stepPixels = 2;
+            for (let px = 0; px <= graphW; px += stepPixels) {
+                const xVal = (px / graphW) * state.maxSpatialX;
+                const yVal = calculateY(xVal, state.time);
+                const py = scaleY(yVal);
+
+                if (px === 0) spatialCtx.moveTo(paddingLeft + px, py);
+                else spatialCtx.lineTo(paddingLeft + px, py);
+            }
+            spatialCtx.stroke();
+            spatialCtx.shadowBlur = 0;
+
+            // Wavelength Marker (λ)
+            if (state.showLambda) {
+                const lambda = getLambda();
+                let crest1X = ((Math.PI / 2) + state.omega * state.time) / state.k;
+                while (crest1X < 0) crest1X += lambda;
+                crest1X = crest1X % lambda;
+
+                const crest2X = crest1X + lambda;
+
+                if (crest2X <= state.maxSpatialX) {
+                    const px1 = scaleX(crest1X);
+                    const px2 = scaleX(crest2X);
+                    const pyCrest = scaleY(state.ym) - 16;
+
+                    spatialCtx.strokeStyle = '#10b981'; // Emerald
+                    spatialCtx.lineWidth = 1.5;
+                    spatialCtx.setLineDash([4, 4]);
+
+                    spatialCtx.beginPath();
+                    spatialCtx.moveTo(px1, scaleY(state.ym));
+                    spatialCtx.lineTo(px1, pyCrest - 4);
+                    spatialCtx.moveTo(px2, scaleY(state.ym));
+                    spatialCtx.lineTo(px2, pyCrest - 4);
+                    spatialCtx.stroke();
+                    spatialCtx.setLineDash([]);
+
+                    spatialCtx.beginPath();
+                    spatialCtx.moveTo(px1, pyCrest);
+                    spatialCtx.lineTo(px2, pyCrest);
+                    spatialCtx.stroke();
+
+                    drawArrowhead(spatialCtx, px1, pyCrest, Math.PI);
+                    drawArrowhead(spatialCtx, px2, pyCrest, 0);
+
+                    spatialCtx.fillStyle = '#10b981';
+                    spatialCtx.font = 'bold 11px Inter, sans-serif';
+                    spatialCtx.textAlign = 'center';
+                    spatialCtx.fillText(`λ = ${lambda.toFixed(2)}m`, (px1 + px2) / 2, pyCrest - 6);
+                }
+            }
+
+            // Amplitude Marker (y_m)
+            if (state.showAmplitude) {
+                const ampX = scaleX(0.4);
+                const yTop = scaleY(state.ym);
+                const yZero = centerY;
+
+                spatialCtx.strokeStyle = '#c084fc'; // Purple
+                spatialCtx.lineWidth = 1.5;
+                spatialCtx.beginPath();
+                spatialCtx.moveTo(ampX, yZero);
+                spatialCtx.lineTo(ampX, yTop);
+                spatialCtx.stroke();
+
+                drawArrowhead(spatialCtx, ampX, yTop, -Math.PI / 2);
+
+                spatialCtx.fillStyle = '#c084fc';
+                spatialCtx.font = 'bold 11px Inter, sans-serif';
+                spatialCtx.textAlign = 'left';
+                spatialCtx.fillText(` y_m = ${state.ym.toFixed(1)}m`, ampX + 6, (yTop + yZero) / 2 + 4);
+            }
+
+            // Tracked Particle Dot
+            if (state.showParticle) {
+                const trackedY = calculateY(state.particleX, state.time);
+                const particlePx = scaleX(state.particleX);
+                const particlePy = scaleY(trackedY);
+
+                // Dashed vertical position guide
+                spatialCtx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+                spatialCtx.lineWidth = 1.5;
+                spatialCtx.setLineDash([3, 3]);
+                spatialCtx.beginPath();
+                spatialCtx.moveTo(particlePx, paddingTop);
+                spatialCtx.lineTo(particlePx, h - paddingBottom);
+                spatialCtx.stroke();
+                spatialCtx.setLineDash([]);
+
+                // Glowing Circle
+                spatialCtx.fillStyle = '#f59e0b';
+                spatialCtx.shadowColor = '#f59e0b';
+                spatialCtx.shadowBlur = 12;
+                spatialCtx.beginPath();
+                spatialCtx.arc(particlePx, particlePy, 8, 0, Math.PI * 2);
+                spatialCtx.fill();
+                spatialCtx.shadowBlur = 0;
+                spatialCtx.strokeStyle = '#ffffff';
+                spatialCtx.lineWidth = 2;
+                spatialCtx.stroke();
+            }
+        }
+
+        // Draw arrowheads helper
+        function drawArrowhead(ctx, x, y, angle) {
+            const size = 5;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 1.5);
+            ctx.lineTo(-size, size / 1.5);
+            ctx.closePath();
+            ctx.fillStyle = ctx.strokeStyle;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Main Animation Loop
+        let lastTimestamp = 0;
+        function animate(timestamp) {
+            if (!lastTimestamp) lastTimestamp = timestamp;
+            const deltaTime = (timestamp - lastTimestamp) / 1000;
+            lastTimestamp = timestamp;
+
+            if (state.isPlaying) {
+                state.time += deltaTime * state.speedMultiplier;
+            }
+
+            updateCalculatedMetrics();
+            drawSpatialGraph();
+
+            requestAnimationFrame(animate);
+        }
+
+        // Input Event Listeners
+        kInput.addEventListener('input', e => {
+            state.k = parseFloat(e.target.value);
+            kVal.textContent = `${state.k.toFixed(2)} rad/m`;
+        });
+
+        omegaInput.addEventListener('input', e => {
+            state.omega = parseFloat(e.target.value);
+            omegaVal.textContent = `${state.omega.toFixed(2)} rad/s`;
+        });
+
+        ymInput.addEventListener('input', e => {
+            state.ym = parseFloat(e.target.value);
+            ymVal.textContent = `${state.ym.toFixed(1)} m`;
+        });
+
+        particleXInput.addEventListener('input', e => {
+            state.particleX = parseFloat(e.target.value);
+            particleXVal.textContent = `${state.particleX.toFixed(1)} m`;
+            trackerXPos.textContent = state.particleX.toFixed(1);
+        });
+
+        // Controls
+        playPauseBtn.addEventListener('click', () => {
+            state.isPlaying = !state.isPlaying;
+            playIcon.className = state.isPlaying ? 'fa-solid fa-pause text-base' : 'fa-solid fa-play text-base ml-0.5';
+        });
+
+        stepForwardBtn.addEventListener('click', () => {
+            state.isPlaying = false;
+            playIcon.className = 'fa-solid fa-play text-base ml-0.5';
+            state.time += 0.05;
+        });
+
+        stepBackBtn.addEventListener('click', () => {
+            state.isPlaying = false;
+            playIcon.className = 'fa-solid fa-play text-base ml-0.5';
+            state.time = Math.max(0, state.time - 0.05);
+        });
+
+        resetBtn.addEventListener('click', () => {
+            state.time = 0;
+        });
+
+        // Speed options
+        const speedBtns = [
+            { btn: document.getElementById('speed05'), speed: 0.5 },
+            { btn: document.getElementById('speed10'), speed: 1.0 },
+            { btn: document.getElementById('speed20'), speed: 2.0 }
+        ];
+
+        speedBtns.forEach(({ btn, speed }) => {
+            btn.addEventListener('click', () => {
+                state.speedMultiplier = speed;
+                speedBtns.forEach(b => {
+                    b.btn.className = 'speed-btn px-2 py-0.5 text-xs rounded font-mono text-slate-400 hover:text-white';
+                });
+                btn.className = 'speed-btn px-2 py-0.5 text-xs rounded font-mono text-cyan-400 bg-cyan-500/10 font-semibold border border-cyan-500/30';
+            });
+        });
+
+        // Toggle Visual Guides
+        toggleWavelength.addEventListener('click', () => {
+            state.showLambda = !state.showLambda;
+            toggleWavelength.classList.toggle('opacity-50', !state.showLambda);
+        });
+
+        toggleAmplitude.addEventListener('click', () => {
+            state.showAmplitude = !state.showAmplitude;
+            toggleAmplitude.classList.toggle('opacity-50', !state.showAmplitude);
+        });
+
+        toggleParticle.addEventListener('click', () => {
+            state.showParticle = !state.showParticle;
+            toggleParticle.classList.toggle('opacity-50', !state.showParticle);
+            particleBadge.classList.toggle('hidden', !state.showParticle);
+        });
+
+        // Fullscreen
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error(`Erro ao ativar tela cheia: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        });
+
+        // Startup
+        window.onload = function() {
+            resizeCanvas();
+            requestAnimationFrame(animate);
+        };
+    </script>
+</body>
+</html>
