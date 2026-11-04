@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Onda Harmônica Espacial y(x,t)</title>
+    <title>Ondas em 1D — Simulador de onda harmônica</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -15,8 +15,8 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #090d16;
-            color: #f3f4f6;
+            background-color: #ffffff;
+            color: #263b55;
         }
 
         .code-font {
@@ -35,29 +35,55 @@
             width: 100%;
             height: 8px;
             cursor: pointer;
-            background: #1e293b;
+            background: #d5e1ee;
             border-radius: 4px;
-            border: 1px solid #334155;
+            border: 1px solid #b8cce0;
         }
         input[type=range]::-webkit-slider-thumb {
             height: 18px;
             width: 18px;
             border-radius: 50%;
-            background: #06b6d4;
+            background: #2d5b91;
             cursor: pointer;
             -webkit-appearance: none;
             margin-top: -5px;
-            box-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
+            box-shadow: 0 0 10px rgba(45, 91, 145, 0.25);
             transition: transform 0.1s ease;
         }
         input[type=range]::-webkit-slider-thumb:hover {
             transform: scale(1.2);
-            background: #22d3ee;
+            background: #477cb4;
         }
 
         .glow-cyan {
             box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
         }
+
+        /* Paleta inspirada no slide Ondas em 1 D */
+        body, body.bg-slate-950 {background:#ffffff!important;color:#263b55!important}
+        header, header.bg-slate-900\/90 {background:#ffffff!important;border-color:#c5d8eb!important}
+        .bg-slate-900, .bg-slate-950, .bg-slate-950\/90 {background:#f2f6fb!important}
+        .bg-slate-800 {background:#dce8f4!important}
+        .border-slate-800, .border-slate-700, .border-slate-800\/80 {border-color:#c7d8e8!important}
+        .text-white,.text-slate-100,.text-slate-200,.text-slate-300 {color:#273d58!important}
+        .text-slate-400,.text-slate-500 {color:#62768d!important}
+        .text-cyan-400,.text-cyan-300 {color:#2d5b91!important}
+        .text-emerald-400,.text-emerald-300 {color:#3d6f9d!important}
+        .text-purple-400,.text-purple-300 {color:#ab6570!important}
+        .text-amber-400,.text-amber-300 {color:#d98222!important}
+        .bg-cyan-500,.bg-cyan-600 {background:#2d5b91!important}
+        .bg-cyan-500\/10,.bg-cyan-500\/20 {background:#dceaf7!important}
+        .border-cyan-500\/30 {border-color:#9dbbda!important}
+        .bg-emerald-500\/20,.bg-purple-500\/20,.bg-amber-500\/20 {background:#e6edf6!important}
+        .border-emerald-500\/50,.border-purple-500\/50,.border-amber-500\/50 {border-color:#b5cbe0!important}
+        .glow-cyan {box-shadow:0 3px 12px rgba(45,91,145,.14)!important}
+        button:hover {filter:brightness(.97)}
+        #playPauseBtn,#fullscreenBtn {color:white!important}
+        #playPauseBtn i,#fullscreenBtn i {color:white!important}
+        #spatialCanvas {background:#ffffff!important}
+        h1 {color:#2d5b91!important}
+        section > div {box-shadow:0 4px 16px rgba(45,91,145,.06)!important}
+        
     </style>
 </head>
 <body class="min-h-screen flex flex-col bg-slate-950 text-slate-100 overflow-x-hidden">
@@ -72,7 +98,7 @@
                 <h1 class="font-bold text-lg leading-tight tracking-wide text-white">
                     Onda Harmônica: <span class="text-cyan-400 font-mono">y(x,t) = y<sub>m</sub> sin(k x - ω t)</span>
                 </h1>
-                <p class="text-xs text-slate-400">Visualizador Dinâmico Espacial</p>
+                <p class="text-xs text-slate-400">Visualizador dinâmico · Ondas em 1D</p>
             </div>
         </div>
 
@@ -371,7 +397,7 @@
             const scaleY = y => centerY - (y / maxY) * (graphH / 2);
 
             // Grid Lines
-            spatialCtx.strokeStyle = '#1e293b';
+            spatialCtx.strokeStyle = '#e9eff5';
             spatialCtx.lineWidth = 1;
 
             // Horizontal Grid (y values)
@@ -382,7 +408,7 @@
                 spatialCtx.lineTo(w - paddingRight, yPos);
                 spatialCtx.stroke();
 
-                spatialCtx.fillStyle = '#64748b';
+                spatialCtx.fillStyle = '#71849a';
                 spatialCtx.font = '10px Fira Code, monospace';
                 spatialCtx.textAlign = 'right';
                 spatialCtx.fillText(`${yVal > 0 ? '+' : ''}${yVal}m`, paddingLeft - 8, yPos + 3);
@@ -396,14 +422,14 @@
                 spatialCtx.lineTo(xPos, h - paddingBottom);
                 spatialCtx.stroke();
 
-                spatialCtx.fillStyle = '#64748b';
+                spatialCtx.fillStyle = '#71849a';
                 spatialCtx.font = '10px Fira Code, monospace';
                 spatialCtx.textAlign = 'center';
                 spatialCtx.fillText(`${xVal}m`, xPos, h - paddingBottom + 16);
             }
 
             // X Axis Center Line
-            spatialCtx.strokeStyle = '#475569';
+            spatialCtx.strokeStyle = '#596777';
             spatialCtx.lineWidth = 1.5;
             spatialCtx.beginPath();
             spatialCtx.moveTo(paddingLeft, centerY);
@@ -411,10 +437,10 @@
             spatialCtx.stroke();
 
             // Waveform Path y(x,t)
-            spatialCtx.strokeStyle = '#06b6d4'; // Cyan
+            spatialCtx.strokeStyle = '#b18c70'; // Cyan
             spatialCtx.lineWidth = 3.5;
-            spatialCtx.shadowColor = '#06b6d4';
-            spatialCtx.shadowBlur = 10;
+            spatialCtx.shadowColor = '#b18c70';
+            spatialCtx.shadowBlur = 0;
 
             spatialCtx.beginPath();
             const stepPixels = 2;
@@ -443,7 +469,7 @@
                     const px2 = scaleX(crest2X);
                     const pyCrest = scaleY(state.ym) - 16;
 
-                    spatialCtx.strokeStyle = '#10b981'; // Emerald
+                    spatialCtx.strokeStyle = '#2d5b91'; // Emerald
                     spatialCtx.lineWidth = 1.5;
                     spatialCtx.setLineDash([4, 4]);
 
@@ -463,7 +489,7 @@
                     drawArrowhead(spatialCtx, px1, pyCrest, Math.PI);
                     drawArrowhead(spatialCtx, px2, pyCrest, 0);
 
-                    spatialCtx.fillStyle = '#10b981';
+                    spatialCtx.fillStyle = '#2d5b91';
                     spatialCtx.font = 'bold 11px Inter, sans-serif';
                     spatialCtx.textAlign = 'center';
                     spatialCtx.fillText(`λ = ${lambda.toFixed(2)}m`, (px1 + px2) / 2, pyCrest - 6);
@@ -476,7 +502,7 @@
                 const yTop = scaleY(state.ym);
                 const yZero = centerY;
 
-                spatialCtx.strokeStyle = '#c084fc'; // Purple
+                spatialCtx.strokeStyle = '#c76e7c'; // Purple
                 spatialCtx.lineWidth = 1.5;
                 spatialCtx.beginPath();
                 spatialCtx.moveTo(ampX, yZero);
@@ -485,7 +511,7 @@
 
                 drawArrowhead(spatialCtx, ampX, yTop, -Math.PI / 2);
 
-                spatialCtx.fillStyle = '#c084fc';
+                spatialCtx.fillStyle = '#c76e7c';
                 spatialCtx.font = 'bold 11px Inter, sans-serif';
                 spatialCtx.textAlign = 'left';
                 spatialCtx.fillText(` y_m = ${state.ym.toFixed(1)}m`, ampX + 6, (yTop + yZero) / 2 + 4);
@@ -498,7 +524,7 @@
                 const particlePy = scaleY(trackedY);
 
                 // Dashed vertical position guide
-                spatialCtx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+                spatialCtx.strokeStyle = 'rgba(217, 130, 34, 0.35)';
                 spatialCtx.lineWidth = 1.5;
                 spatialCtx.setLineDash([3, 3]);
                 spatialCtx.beginPath();
@@ -508,9 +534,9 @@
                 spatialCtx.setLineDash([]);
 
                 // Glowing Circle
-                spatialCtx.fillStyle = '#f59e0b';
-                spatialCtx.shadowColor = '#f59e0b';
-                spatialCtx.shadowBlur = 12;
+                spatialCtx.fillStyle = '#e58b20';
+                spatialCtx.shadowColor = '#e58b20';
+                spatialCtx.shadowBlur = 3;
                 spatialCtx.beginPath();
                 spatialCtx.arc(particlePx, particlePy, 8, 0, Math.PI * 2);
                 spatialCtx.fill();
